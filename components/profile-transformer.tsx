@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { Loader2, Sparkles, Download, Share2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { getPredictionStatus, transformImage, getTwitterProfileImage } from "@/lib/actions"
 
 interface TransformationState {
   status: "idle" | "fetching-profile" | "transforming" | "polling" | "complete" | "error"
@@ -24,32 +25,37 @@ export function ProfileTransformer() {
     const cleanUsername = username.replace("@", "")
 
     try {
-      // Using a proxy service to fetch Twitter profile data
-      const response = await fetch(`/api/twitter-profile?username=${cleanUsername}`)
-      if (!response.ok) throw new Error("Failed to fetch profile")
+      const result = await getTwitterProfileImage({ username: cleanUsername })
 
-      const data = await response.json()
-      return data.profile_image_url
+      if (result.error) {
+        throw new Error(result.error)
+      }
+
+      if (!result.profile_image_url) {
+        throw new Error("No profile image found")
+      }
+
+      return result.profile_image_url
     } catch (error) {
       throw new Error("Could not fetch profile picture. Please check the username.")
     }
   }
 
-  const transformImage = async (imageUrl: string) => {
+  const startTransformation = async (imageUrl: string) => {
     try {
-      const response = await fetch("/api/fashn-transform", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          image_url: imageUrl,
-          model_name: "face-to-model",
-        }),
+      const result = await transformImage({
+        image_url: imageUrl,
       })
 
-      if (!response.ok) throw new Error("Transformation failed")
+      if (result.error) {
+        throw new Error(result.error)
+      }
 
-      const data = await response.json()
-      return data.id
+      if (!result.id) {
+        throw new Error("No transformation ID returned")
+      }
+
+      return result.id
     } catch (error) {
       throw new Error("Failed to start transformation")
     }
@@ -61,16 +67,16 @@ export function ProfileTransformer() {
 
     while (attempts < maxAttempts) {
       try {
-        const response = await fetch(`/api/fashn-status?id=${id}`)
-        if (!response.ok) throw new Error("Polling failed")
+        const response = await getPredictionStatus(id)
+        if (response?.error) throw new Error("Polling failed")
 
-        const data = await response.json()
 
-        if (data.status === "completed" && data.output?.[0]) {
-          return data.output[0]
+
+        if (response.prediction.status === "completed" && response.prediction.output?.[0]) {
+          return response.prediction.output[0]
         }
 
-        if (data.status === "failed") {
+        if (response.prediction.status === "failed") {
           throw new Error("Transformation failed")
         }
 
@@ -104,7 +110,7 @@ export function ProfileTransformer() {
 
       // Step 2: Start transformation
       setState((prev) => ({ ...prev, status: "transforming" }))
-      const transformationId = await transformImage(profileImage)
+      const transformationId = await startTransformation(profileImage)
 
       // Step 3: Poll for results
       setState((prev) => ({ ...prev, status: "polling" }))
@@ -263,7 +269,7 @@ export function ProfileTransformer() {
             <Card className="overflow-hidden border-2 border-accent/20">
               <CardContent className="p-4">
                 <h3 className="font-semibold text-card-foreground mb-3 text-center">AI Model ✨</h3>
-                <div className="aspect-square relative rounded-lg overflow-hidden bg-muted mb-4">
+                <div className="relative rounded-lg overflow-hidden bg-muted mb-4" style={{ aspectRatio: '2/3' }}>
                   <img
                     src={state.transformedImage || "/placeholder.svg"}
                     alt="AI transformed"
