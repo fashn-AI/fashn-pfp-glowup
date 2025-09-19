@@ -171,7 +171,7 @@ export function ProfileTransformer() {
         
         const link = document.createElement("a")
         link.href = url
-        link.download = `${handle}-ai-model.jpg`
+        link.download = `${handle}-ai-model.png`
         document.body.appendChild(link)
         link.click()
         document.body.removeChild(link)
