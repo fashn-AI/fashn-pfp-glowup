@@ -1,8 +1,10 @@
 "use server"
 import axios from "axios"
+import { validateTurnstileToken } from "next-turnstile";
 
 interface TransformImageParams {
     image_url: string
+    turnstile_token: string
 }
 
 interface TransformImageResult {
@@ -14,10 +16,19 @@ interface TransformImageResult {
 const MIN_SEED = 0;
 const MAX_SEED = 2 ** 32 - 1;
 
-export async function transformImage({ image_url }: TransformImageParams): Promise<TransformImageResult> {
+export async function transformImage({ image_url, turnstile_token }: TransformImageParams): Promise<TransformImageResult> {
     try {
         if (!image_url) {
             return { error: "image_url and model_name are required" }
+        }
+
+        const result = await validateTurnstileToken({
+            token: turnstile_token,
+            secretKey: process.env.TURNSTILE_SECRET_KEY!,
+        });
+        
+        if (!result.success) {
+            throw new Error("Bot challenge failed");
         }
 
         const response = await axios.post("https://api.fashn.ai/v1/run", {

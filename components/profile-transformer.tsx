@@ -1,12 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent } from "@/components/ui/card"
-import { Loader2, Sparkles, Download, Share2 } from "lucide-react"
+import { Card, CardContent, CardFooter } from "@/components/ui/card"
+import { Loader2, Sparkles, Download, Share2, AlertCircle } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { getPredictionStatus, transformImage, getTwitterProfileImage } from "@/lib/actions"
+import { Turnstile } from "next-turnstile"
 
 interface TransformationState {
   status: "idle" | "fetching-profile" | "transforming" | "polling" | "complete" | "error"
@@ -18,7 +19,21 @@ interface TransformationState {
 export function ProfileTransformer() {
   const [handle, setHandle] = useState("")
   const [state, setState] = useState<TransformationState>({ status: "idle" })
+  const [turnstileVerificationInProgress, setTurnstileVerificationInProgress] = useState(false);
+  const [turnstileStatus, setTurnstileStatus] = useState<
+    "success" | "error" | "expired" | "required"
+  >("required");
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast()
+
+  const turnstileRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (turnstileStatus === "success") {
+      handleTransform();
+    }
+  }, [turnstileStatus]);
 
   const fetchProfilePicture = async (username: string) => {
     // Remove @ if present
@@ -41,14 +56,25 @@ export function ProfileTransformer() {
     }
   }
 
+  const executeTurnstile = () => {
+    setTurnstileVerificationInProgress(true);
+    
+    window.turnstile.execute(turnstileRef.current, {
+      retry: "auto",
+      refreshExpired: "auto",
+      sandbox: false,
+    })
+  }
+
   const startTransformation = async (imageUrl: string) => {
     try {
       const result = await transformImage({
         image_url: imageUrl,
+        turnstile_token: turnstileToken || "",
       })
 
       if (result.error) {
-        throw new Error(result.error)
+        throw new Error("Failed to start transformation");
       }
 
       if (!result.id) {
@@ -56,7 +82,7 @@ export function ProfileTransformer() {
       }
 
       return result.id
-    } catch (error) {
+    } catch (error: any) {
       throw new Error("Failed to start transformation")
     }
   }
@@ -90,6 +116,10 @@ export function ProfileTransformer() {
     }
 
     throw new Error("Transformation timed out")
+  }
+
+  const initiateTransform = () => {
+    executeTurnstile();
   }
 
   const handleTransform = async () => {
@@ -174,7 +204,7 @@ export function ProfileTransformer() {
     setHandle("")
   }
 
-  const isLoading = ["fetching-profile", "transforming", "polling"].includes(state.status)
+  const isLoading = ["fetching-profile", "transforming", "polling"].includes(state.status) || turnstileVerificationInProgress;
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -196,11 +226,11 @@ export function ProfileTransformer() {
                     onChange={(e) => setHandle(e.target.value)}
                     className="pl-8 bg-input border-border"
                     disabled={isLoading}
-                    onKeyDown={(e) => e.key === "Enter" && handleTransform()}
+                    onKeyDown={(e) => e.key === "Enter" && initiateTransform()}
                   />
                 </div>
                 <Button
-                  onClick={handleTransform}
+                  onClick={initiateTransform}
                   disabled={isLoading || !handle.trim()}
                   className="bg-primary hover:bg-primary/90 text-primary-foreground px-6"
                 >
@@ -238,11 +268,58 @@ export function ProfileTransformer() {
               </div>
             )}
 
+            {turnstileVerificationInProgress && (
+              <div className="text-center text-muted-foreground">
+                <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2" />
+                Performing security checks...
+              </div>
+            )}
+
             {state.error && (
               <div className="text-center text-destructive bg-destructive/10 p-3 rounded-lg">{state.error}</div>
             )}
           </div>
         </CardContent>
+        <CardFooter>
+          <Turnstile
+            siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+            retry="auto"
+            refreshExpired="auto"
+            execution="execute"
+            appearance="execute"
+            theme="auto"
+            sandbox={false}
+            onError={() => {
+              setTurnstileStatus("error");
+              setError("Security check failed. Please try again.");
+              setTurnstileVerificationInProgress(false);
+            }}
+            onExpire={() => {
+              setTurnstileStatus("expired");
+              setError("Security check expired. Please verify again.");
+              setTurnstileVerificationInProgress(false);
+            }}
+            onLoad={() => {
+              setTurnstileStatus("required");
+              setError(null);
+            }}
+            onVerify={async(token) => {
+              setTurnstileToken(token);
+              setTurnstileStatus("success");
+              setError(null);
+              setTurnstileVerificationInProgress(false);
+            }}
+          />
+          {error && (
+            <div
+              className="flex items-center gap-2 text-red-500 text-sm mb-2"
+              aria-live="polite"
+            >
+              <AlertCircle size={16} />
+              <span>{error}</span>
+            </div>
+          )}
+        </CardFooter>
       </Card>
 
       {/* Results Section */}
