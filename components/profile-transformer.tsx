@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
-import { Loader2, Sparkles, Download, Share2, AlertCircle } from "lucide-react"
+import { Loader2, Sparkles, Download, Share2, AlertCircle, Copy } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { getPredictionStatus, transformImage, getTwitterProfileImage } from "@/lib/actions"
 import { Turnstile } from "next-turnstile"
@@ -153,6 +153,8 @@ export function ProfileTransformer() {
         transformedImage,
       }))
 
+      setTurnstileStatus("required");
+
       toast({
         title: "Transformation complete! ✨",
         description: "Your AI model is ready to download",
@@ -171,12 +173,29 @@ export function ProfileTransformer() {
     }
   }
 
-  const downloadImage = () => {
+  const downloadImage = async () => {
     if (state.transformedImage) {
-      const link = document.createElement("a")
-      link.href = state.transformedImage
-      link.download = `${handle}-ai-model.jpg`
-      link.click()
+      try {
+        const response = await fetch(state.transformedImage)
+        const blob = await response.blob()
+        const url = window.URL.createObjectURL(blob)
+        
+        const link = document.createElement("a")
+        link.href = url
+        link.download = `${handle}-ai-model.jpg`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        
+        // Clean up the object URL
+        window.URL.revokeObjectURL(url)
+      } catch (error) {
+        toast({
+          title: "Download failed",
+          description: "Could not download image",
+          variant: "destructive",
+        })
+      }
     }
   }
 
@@ -199,6 +218,30 @@ export function ProfileTransformer() {
     }
   }
 
+  const copyImage = async () => {
+    if (state.transformedImage) {
+      try {
+        const response = await fetch(state.transformedImage)
+        const blob = await response.blob()
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            [blob.type]: blob
+          })
+        ])
+        toast({
+          title: "Image copied!",
+          description: "Image copied to clipboard",
+        })
+      } catch (error) {
+        toast({
+          title: "Copy failed",
+          description: "Could not copy image to clipboard",
+          variant: "destructive",
+        })
+      }
+    }
+  }
+
   const reset = () => {
     setState({ status: "idle" })
     setHandle("")
@@ -207,10 +250,10 @@ export function ProfileTransformer() {
   const isLoading = ["fetching-profile", "transforming", "polling"].includes(state.status) || turnstileVerificationInProgress;
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="max-w-2xl mx-auto space-y-6 relative">
       {/* Input Section */}
-      <Card className="border-2 border-primary/20 shadow-lg">
-        <CardContent className="p-6">
+      <Card className="border border-primary/20 shadow-xs">
+        <CardContent className="p-">
           <div className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="handle" className="text-sm font-medium text-card-foreground">
@@ -232,13 +275,13 @@ export function ProfileTransformer() {
                 <Button
                   onClick={initiateTransform}
                   disabled={isLoading || !handle.trim()}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground px-6"
+                  className="w-28 bg-primary hover:bg-primary/90 text-sm text-primary-foreground px-6"
                 >
                   {isLoading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 className="size-4 animate-spin" />
                   ) : (
                     <>
-                      <Sparkles className="w-4 h-4 mr-2" />
+                      <Sparkles className="size-3" />
                       Transform
                     </>
                   )}
@@ -280,7 +323,7 @@ export function ProfileTransformer() {
             )}
           </div>
         </CardContent>
-        <CardFooter>
+        <div className="absolute bottom-0 right-0">
           <Turnstile
             siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
             retry="auto"
@@ -308,6 +351,9 @@ export function ProfileTransformer() {
               setTurnstileStatus("success");
               setError(null);
               setTurnstileVerificationInProgress(false);
+              setTimeout(() => {
+                window.turnstile.reset(turnstileRef.current);
+              }, 1500);
             }}
           />
           {error && (
@@ -319,7 +365,7 @@ export function ProfileTransformer() {
               <span>{error}</span>
             </div>
           )}
-        </CardFooter>
+        </div>
       </Card>
 
       {/* Results Section */}
@@ -327,8 +373,8 @@ export function ProfileTransformer() {
         <div className="grid md:grid-cols-2 gap-6">
           {/* Original Profile */}
           {state.profileImage && (
-            <Card className="overflow-hidden">
-              <CardContent className="p-4">
+            <Card className="overflow-hidden border border-primary/20 shadow-sm">
+              <CardContent>
                 <h3 className="font-semibold text-card-foreground mb-3 text-center">Original Profile</h3>
                 <div className="aspect-square relative rounded-lg overflow-hidden bg-muted">
                   <img
@@ -343,8 +389,8 @@ export function ProfileTransformer() {
 
           {/* Transformed Result */}
           {state.transformedImage && (
-            <Card className="overflow-hidden border-2 border-accent/20">
-              <CardContent className="p-4">
+            <Card className="overflow-hidden border border-primary/20 shadow-sm">
+              <CardContent>
                 <h3 className="font-semibold text-card-foreground mb-3 text-center">AI Model ✨</h3>
                 <div className="relative rounded-lg overflow-hidden bg-muted mb-4" style={{ aspectRatio: '2/3' }}>
                   <img
@@ -358,13 +404,17 @@ export function ProfileTransformer() {
                 <div className="flex gap-2">
                   <Button
                     onClick={downloadImage}
-                    className="flex-1 bg-secondary hover:bg-secondary/90 text-secondary-foreground"
+                    className="flex-1 bg-secondary text-xs"
                   >
-                    <Download className="w-4 h-4 mr-2" />
+                    <Download className="size-3" />
                     Download
                   </Button>
-                  <Button onClick={shareImage} variant="outline" className="flex-1 bg-transparent">
-                    <Share2 className="w-4 h-4 mr-2" />
+                  <Button onClick={copyImage} variant="outline" className="flex-1 bg-transparent text-xs">
+                    <Copy className="size-3" />
+                    Copy
+                  </Button>
+                  <Button onClick={shareImage} variant="outline" className="flex-1 bg-transparent text-xs">
+                    <Share2 className="size-3" />
                     Share
                   </Button>
                 </div>
