@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardFooter } from "@/components/ui/card"
 import { Loader2, Sparkles, Download, Share2, AlertCircle, Copy } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
 import { getPredictionStatus, transformImage, getTwitterProfileImage } from "@/lib/actions"
 import { Turnstile } from "next-turnstile"
+import toast, { Toaster } from 'react-hot-toast';
 
 interface TransformationState {
   status: "idle" | "fetching-profile" | "transforming" | "polling" | "complete" | "error"
@@ -25,8 +25,8 @@ export function ProfileTransformer() {
   >("required");
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const { toast } = useToast()
 
+  const inputHandleRef = useRef<HTMLInputElement>(null);
   const turnstileRef = useRef<any>(null);
 
   useEffect(() => {
@@ -124,11 +124,7 @@ export function ProfileTransformer() {
 
   const handleTransform = async () => {
     if (!handle.trim()) {
-      toast({
-        title: "Please enter a handle",
-        description: "Enter an X username to get started",
-        variant: "destructive",
-      })
+      toast.error("Please enter a X/Twitter handle")
       return
     }
 
@@ -155,21 +151,14 @@ export function ProfileTransformer() {
 
       setTurnstileStatus("required");
 
-      toast({
-        title: "Transformation complete! ✨",
-        description: "Your AI model is ready to download",
-      })
+      toast.success("Transformation complete! ✨")
     } catch (error) {
       setState({
         status: "error",
         error: error instanceof Error ? error.message : "Something went wrong",
       })
 
-      toast({
-        title: "Transformation failed",
-        description: error instanceof Error ? error.message : "Please try again",
-        variant: "destructive",
-      })
+      toast.error("Transformation failed. Please try again.")
     }
   }
 
@@ -190,11 +179,7 @@ export function ProfileTransformer() {
         // Clean up the object URL
         window.URL.revokeObjectURL(url)
       } catch (error) {
-        toast({
-          title: "Download failed",
-          description: "Could not download image",
-          variant: "destructive",
-        })
+        toast.error("Download failed. Could not download image")
       }
     }
   }
@@ -210,10 +195,7 @@ export function ProfileTransformer() {
       } catch (error) {
         // Fallback to copying URL
         navigator.clipboard.writeText(state.transformedImage)
-        toast({
-          title: "Link copied!",
-          description: "Image URL copied to clipboard",
-        })
+        toast.success("Link copied! Image URL copied to clipboard")
       }
     }
   }
@@ -228,21 +210,15 @@ export function ProfileTransformer() {
             [blob.type]: blob
           })
         ])
-        toast({
-          title: "Image copied!",
-          description: "Image copied to clipboard",
-        })
+        toast.success("Image copied! Image copied to clipboard")
       } catch (error) {
-        toast({
-          title: "Copy failed",
-          description: "Could not copy image to clipboard",
-          variant: "destructive",
-        })
+        toast.error("Copy failed. Could not copy image to clipboard")
       }
     }
   }
 
   const reset = () => {
+    inputHandleRef.current?.focus();
     setState({ status: "idle" })
     setHandle("")
   }
@@ -250,9 +226,9 @@ export function ProfileTransformer() {
   const isLoading = ["fetching-profile", "transforming", "polling"].includes(state.status) || turnstileVerificationInProgress;
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 relative">
+    <div className="max-w-2xl mx-auto space-y-6">
       {/* Input Section */}
-      <Card className="border border-primary/20 shadow-xs">
+      <Card className="border border-primary/20 shadow-xs relative">
         <CardContent className="p-">
           <div className="space-y-4">
             <div className="space-y-2">
@@ -263,12 +239,14 @@ export function ProfileTransformer() {
                 <div className="relative flex-1">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">@</span>
                   <Input
+                    ref={inputHandleRef}
                     id="handle"
                     placeholder="username"
                     value={handle}
                     onChange={(e) => setHandle(e.target.value)}
                     className="pl-8 bg-input border-border"
                     disabled={isLoading}
+                    autoFocus={true}
                     onKeyDown={(e) => e.key === "Enter" && initiateTransform()}
                   />
                 </div>
@@ -392,12 +370,14 @@ export function ProfileTransformer() {
             <Card className="overflow-hidden border border-primary/20 shadow-sm">
               <CardContent>
                 <h3 className="font-semibold text-card-foreground mb-3 text-center">AI Model ✨</h3>
-                <div className="relative rounded-lg overflow-hidden bg-muted mb-4" style={{ aspectRatio: '2/3' }}>
-                  <img
-                    src={state.transformedImage || "/placeholder.svg"}
-                    alt="AI transformed"
-                    className="w-full h-full object-cover"
-                  />
+                <div className="flex justify-center items-center text-center">
+                  <div className="relative flex justify-center items-center text-center rounded-lg overflow-hidden bg-muted mb-4 h-56" style={{ aspectRatio: '2/3' }}>
+                    <img
+                      src={state.transformedImage || "/placeholder.svg"}
+                      alt="AI transformed"
+                      className="h-full w-auto object-contain mx-auto"
+                      />
+                  </div>
                 </div>
 
                 {/* Action Buttons */}
@@ -432,6 +412,8 @@ export function ProfileTransformer() {
           </Button>
         </div>
       )}
+
+      <Toaster />
     </div>
   )
 }
