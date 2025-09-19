@@ -3,14 +3,14 @@
 import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardFooter } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Loader2, Sparkles, Download, Share2, AlertCircle, Copy } from "lucide-react"
-import { getPredictionStatus, transformImage, getTwitterProfileImage } from "@/lib/actions"
+import { transformImage, getTwitterProfileImage } from "@/lib/actions"
 import { Turnstile } from "next-turnstile"
 import toast, { Toaster } from 'react-hot-toast';
 
 interface TransformationState {
-  status: "idle" | "fetching-profile" | "transforming" | "polling" | "complete" | "error"
+  status: "idle" | "fetching-profile" | "transforming" | "complete" | "error"
   profileImage?: string
   transformedImage?: string
   error?: string
@@ -77,43 +77,10 @@ export function ProfileTransformer() {
         throw new Error(result.error);
       }
 
-      if (!result.id) {
-        throw new Error("No transformation ID returned")
-      }
-
-      return result.id
+      return result.image
     } catch (error: any) {
       throw new Error(error instanceof Error ? error.message : "Something went wrong")
     }
-  }
-
-  const pollTransformation = async (id: string): Promise<string> => {
-    const maxAttempts = 30
-    let attempts = 0
-
-    while (attempts < maxAttempts) {
-      try {
-        const response = await getPredictionStatus(id)
-        if (response?.error) throw new Error("Polling failed")
-
-        if (response.prediction.status === "completed" && response.prediction.output?.[0]) {
-          return response.prediction.output[0]
-        }
-
-        if (response.prediction.status === "failed") {
-          throw new Error("Transformation failed")
-        }
-
-        // Wait 2 seconds before next poll
-        await new Promise((resolve) => setTimeout(resolve, 2000))
-        attempts++
-      } catch (error) {
-        attempts++
-        if (attempts >= maxAttempts) throw error
-      }
-    }
-
-    throw new Error("Transformation timed out")
   }
 
   const initiateTransform = () => {
@@ -136,13 +103,9 @@ export function ProfileTransformer() {
 
       // Step 2: Start transformation
       setState((prev) => ({ ...prev, status: "transforming" }))
-      const transformationId = await startTransformation(profileImage)
+      const transformedImage = await startTransformation(profileImage)
 
-      // Step 3: Poll for results
-      setState((prev) => ({ ...prev, status: "polling" }))
-      const transformedImage = await pollTransformation(transformationId)
-
-      // Step 4: Complete
+      // Step 3: Complete
       setState((prev) => ({
         ...prev,
         status: "complete",
@@ -226,7 +189,7 @@ export function ProfileTransformer() {
     setHandle("")
   }
 
-  const isLoading = ["fetching-profile", "transforming", "polling"].includes(state.status) || turnstileVerificationInProgress;
+  const isLoading = ["fetching-profile", "transforming"].includes(state.status) || turnstileVerificationInProgress;
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -282,13 +245,6 @@ export function ProfileTransformer() {
               <div className="text-center text-muted-foreground">
                 <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2" />
                 Starting AI transformation...
-              </div>
-            )}
-
-            {state.status === "polling" && (
-              <div className="text-center text-muted-foreground">
-                <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2" />
-                Creating your AI model... This may take a minute ✨
               </div>
             )}
 

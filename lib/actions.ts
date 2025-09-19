@@ -1,9 +1,14 @@
 "use server"
-import axios from "axios"
+
 import { validateTurnstileToken } from "next-turnstile";
 import { Redis } from "@upstash/redis";
 import { Ratelimit } from "@upstash/ratelimit";
 import { headers } from "next/headers";
+import Fashn from 'fashn';
+
+const fashnClient = new Fashn({
+    apiKey: process.env.FASHN_API_KEY,
+});
 
 const ipRatelimit = new Ratelimit({
     redis: Redis.fromEnv(),
@@ -25,9 +30,8 @@ interface TransformImageParams {
 }
 
 interface TransformImageResult {
-    id?: string
+    image?: string
     error?: string
-    status?: number
 }
 
 const MIN_SEED = 0;
@@ -36,7 +40,7 @@ const MAX_SEED = 2 ** 32 - 1;
 export async function transformImage({ image_url, turnstile_token }: TransformImageParams): Promise<TransformImageResult> {
     try {
         if (!image_url) {
-            return { error: "image_url and model_name are required" }
+            return { error: "image_url is required" }
         }
 
         const result = await validateTurnstileToken({
@@ -45,7 +49,7 @@ export async function transformImage({ image_url, turnstile_token }: TransformIm
         });
         
         if (!result.success) {
-            throw new Error("Bot challenge failed");
+            return { error: "Bot challenge failed." }
         }
 
         const headersList = headers();
@@ -65,60 +69,25 @@ export async function transformImage({ image_url, turnstile_token }: TransformIm
             return { error: "Rate limit exceeded. Please try again later." }
         }
 
-        const response = await axios.post("https://api.fashn.ai/v1/run", {
-
-            model_name: "face-to-model",
+        const response: Fashn.PredictionSubscribeResponse = await fashnClient.predictions.subscribe({
             inputs: {
-                face_image: image_url,
-                seed: Math.floor(Math.random() * (MAX_SEED - MIN_SEED + 1)) + MIN_SEED,
-                aspect_ratio: "2:3",
+              face_image: image_url,
+              seed: Math.floor(Math.random() * (MAX_SEED - MIN_SEED + 1)) + MIN_SEED,
+              aspect_ratio: "2:3",
             },
-        },
-            {
-                headers: {
-                    Authorization: `Bearer ${process.env.FASHN_API_KEY}`,
-                    'Content-Type': 'application/json',
-                }
-            },
-        )
-
-        const { id } = response.data;
-
-        if (!id) {
-            throw new Error('Failed to generate prediction ID');
-        }
-
-        return {
-            id,
-            status: 200
-        };
-    } catch (error) {
-        console.error("Transform action error:", error)
-        return { error: "Internal server error" }
-    }
-}
-
-export const getPredictionStatus = async (id: string) => {
-
-    try {
-        const response: any = await axios.get(`https://api.fashn.ai/v1/status/${id}`, {
-            headers: {
-                Authorization: `Bearer ${process.env.FASHN_API_KEY}`,
-                'Content-Type': 'application/json',
-            },
+            model_name: 'face-to-model',
+        }).catch(async (err) => {
+            throw new Error(err.name)
         });
 
-        const prediction = response.data;
-
-        return { prediction };
-    } catch (err: any) {
-        if (err?.response?.status === 400) {
-            return { error: 'Prediction is canceled', status: 400 };
-        }
-
-        return { error: 'Something went wrong', status: 500 };
+        return {
+            image: response.output?.[0]
+        };
+    } catch (error: any) {
+        console.error("Transform action error:", error)
+        return { error: error.name }
     }
-};
+}
 
 interface TwitterProfileParams {
     username: string
