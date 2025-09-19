@@ -5,9 +5,9 @@ import { Redis } from "@upstash/redis";
 import { Ratelimit } from "@upstash/ratelimit";
 import { headers } from "next/headers";
 
-const ratelimit = new Ratelimit({
+const ipRatelimit = new Ratelimit({
     redis: Redis.fromEnv(),
-    limiter: Ratelimit.slidingWindow(10, "10 m"),
+    limiter: Ratelimit.slidingWindow(5, "10 m"),
     analytics: false,
     prefix: "@fashn-ai/avatar",
 });
@@ -52,7 +52,7 @@ export async function transformImage({ image_url, turnstile_token }: TransformIm
         const ip = (headersList.get("x-forwarded-for") || "127.0.0.1").split(",")[0];
 
         const identifier = `transform-image:${ip}`;
-        const { success } = await ratelimit.limit(identifier);
+        const { success } = await ipRatelimit.limit(identifier);
 
         const dailyIdentifier = `transform-image-daily`;
         const { success: dailySuccess } = await dailyRatelimit.limit(dailyIdentifier);
