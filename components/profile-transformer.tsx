@@ -74,7 +74,7 @@ export function ProfileTransformer() {
       })
 
       if (result.error) {
-        throw new Error("Failed to start transformation");
+        throw new Error(result.error);
       }
 
       if (!result.id) {
@@ -83,7 +83,7 @@ export function ProfileTransformer() {
 
       return result.id
     } catch (error: any) {
-      throw new Error("Failed to start transformation")
+      throw new Error(error instanceof Error ? error.message : "Something went wrong")
     }
   }
 
@@ -95,8 +95,6 @@ export function ProfileTransformer() {
       try {
         const response = await getPredictionStatus(id)
         if (response?.error) throw new Error("Polling failed")
-
-
 
         if (response.prediction.status === "completed" && response.prediction.output?.[0]) {
           return response.prediction.output[0]
@@ -119,6 +117,8 @@ export function ProfileTransformer() {
   }
 
   const initiateTransform = () => {
+    setState({ status: "idle" })
+
     executeTurnstile();
   }
 
@@ -149,8 +149,6 @@ export function ProfileTransformer() {
         transformedImage,
       }))
 
-      setTurnstileStatus("required");
-
       toast.success("Transformation complete! ✨")
     } catch (error) {
       setState({
@@ -158,7 +156,9 @@ export function ProfileTransformer() {
         error: error instanceof Error ? error.message : "Something went wrong",
       })
 
-      toast.error("Transformation failed. Please try again.")
+      toast.error(error instanceof Error ? error.message : "Something went wrong")
+    } finally {
+      setTurnstileStatus("required");
     }
   }
 

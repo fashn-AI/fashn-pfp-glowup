@@ -1,6 +1,23 @@
 "use server"
 import axios from "axios"
 import { validateTurnstileToken } from "next-turnstile";
+import { Redis } from "@upstash/redis";
+import { Ratelimit } from "@upstash/ratelimit";
+import { headers } from "next/headers";
+
+const ratelimit = new Ratelimit({
+    redis: Redis.fromEnv(),
+    limiter: Ratelimit.slidingWindow(10, "10 m"),
+    analytics: false,
+    prefix: "@fashn-ai/avatar",
+});
+
+const dailyRatelimit = new Ratelimit({
+    redis: Redis.fromEnv(),
+    limiter: Ratelimit.slidingWindow(100, "1 d"),
+    analytics: false,
+    prefix: "@fashn-ai/avatar",
+});
 
 interface TransformImageParams {
     image_url: string
@@ -29,6 +46,23 @@ export async function transformImage({ image_url, turnstile_token }: TransformIm
         
         if (!result.success) {
             throw new Error("Bot challenge failed");
+        }
+
+        const headersList = headers();
+        const ip = (headersList.get("x-forwarded-for") || "127.0.0.1").split(",")[0];
+
+        const identifier = `transform-image:${ip}`;
+        const { success } = await ratelimit.limit(identifier);
+
+        const dailyIdentifier = `transform-image-daily`;
+        const { success: dailySuccess } = await dailyRatelimit.limit(dailyIdentifier);
+
+        if (!dailySuccess) {
+            return { error: "Daily rate limit exceeded. Please try again tomorrow." }
+        }
+
+        if (!success) {
+            return { error: "Rate limit exceeded. Please try again later." }
         }
 
         const response = await axios.post("https://api.fashn.ai/v1/run", {
