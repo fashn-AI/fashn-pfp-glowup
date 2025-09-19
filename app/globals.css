@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Kalam:wght@300;400;700&display=swap');
+
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -77,6 +79,7 @@
 }
 
 @theme inline {
+  --font-kalam: 'Kalam', cursive;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --color-background: var(--background);

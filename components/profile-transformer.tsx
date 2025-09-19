@@ -164,6 +164,7 @@ export function ProfileTransformer() {
 
   const downloadImage = async () => {
     if (state.transformedImage) {
+      let toastId = toast.loading("Downloading image...")
       try {
         const response = await fetch(state.transformedImage)
         const blob = await response.blob()
@@ -178,8 +179,9 @@ export function ProfileTransformer() {
         
         // Clean up the object URL
         window.URL.revokeObjectURL(url)
+        toast.success("Image downloaded! Image downloaded to your downloads folder", { id: toastId })
       } catch (error) {
-        toast.error("Download failed. Could not download image")
+        toast.error("Download failed. Could not download image", { id: toastId })
       }
     }
   }
@@ -202,6 +204,7 @@ export function ProfileTransformer() {
 
   const copyImage = async () => {
     if (state.transformedImage) {
+      let toastId = toast.loading("Copying image to clipboard...")
       try {
         const response = await fetch(state.transformedImage)
         const blob = await response.blob()
@@ -210,9 +213,9 @@ export function ProfileTransformer() {
             [blob.type]: blob
           })
         ])
-        toast.success("Image copied! Image copied to clipboard")
+        toast.success("Image copied! Image copied to clipboard", { id: toastId })
       } catch (error) {
-        toast.error("Copy failed. Could not copy image to clipboard")
+        toast.error("Copy failed. Could not copy image to clipboard", { id: toastId })
       }
     }
   }
@@ -348,60 +351,81 @@ export function ProfileTransformer() {
 
       {/* Results Section */}
       {(state.profileImage || state.transformedImage) && (
-        <div className="grid md:grid-cols-2 gap-6">
-          {/* Original Profile */}
-          {state.profileImage && (
-            <Card className="overflow-hidden border border-primary/20 shadow-sm">
-              <CardContent>
-                <h3 className="font-semibold text-card-foreground mb-3 text-center">Original Profile</h3>
-                <div className="aspect-square relative rounded-lg overflow-hidden bg-muted">
+        <Card className="overflow-hidden border border-primary/20">
+          <CardContent className="p-6">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+              {/* Original Profile */}
+              {state.profileImage && (
+                <div className="flex flex-col items-center justify-center h-full relative">
                   <img
                     src={state.profileImage || "/placeholder.svg"}
                     alt="Original profile"
-                    className="w-full h-full object-cover"
+                    className="w-32 h-32 rounded-lg object-cover shadow-lg"
                   />
+                  {state.transformedImage && (
+                    <div className="hidden absolute -top-[55%] -right-[15%] md:flex flex-col items-center justify-start">
+                      <div className="relative">
+                        <p className="absolute -top-[15px] lg:top-[7px] -rotate-12 text-xs text-gray-600 font-kalam">Hey that's me!</p>
+                        <img
+                          src="/arrow.svg"
+                          alt="Transform arrow"
+                          className="w-16 h-16 lg:w-20 lg:h-20 opacity-80"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              )}
 
-          {/* Transformed Result */}
-          {state.transformedImage && (
-            <Card className="overflow-hidden border border-primary/20 shadow-sm">
-              <CardContent>
-                <h3 className="font-semibold text-card-foreground mb-3 text-center">AI Model ✨</h3>
-                <div className="flex justify-center items-center text-center">
-                  <div className="relative flex justify-center items-center text-center rounded-lg overflow-hidden bg-muted mb-4 h-56" style={{ aspectRatio: '2/3' }}>
+              {state.transformedImage && (
+                <div className="md:hidden flex flex-col items-center justify-start">
+                  <div className="relative flex items-center">
+                    <p className="absolute -left-[80px] text-sm text-gray-600 font-kalam">Hey that's me!</p>
+                    <img
+                      src="/arrow.svg"
+                      alt="Transform arrow"
+                      className="size-12 rotate-90"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* AI Model */}
+              {state.transformedImage && (
+                <div className="flex flex-col items-center">
+                  <div className="w-40 h-56 rounded-lg overflow-hidden bg-muted" style={{ aspectRatio: '2/3' }}>
                     <img
                       src={state.transformedImage || "/placeholder.svg"}
                       alt="AI transformed"
-                      className="h-full w-auto object-contain mx-auto"
-                      />
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                 </div>
+              )}
+            </div>
 
-                {/* Action Buttons */}
-                <div className="flex gap-2">
-                  <Button
-                    onClick={downloadImage}
-                    className="flex-1 bg-secondary text-xs"
-                  >
-                    <Download className="size-3" />
-                    Download
-                  </Button>
-                  <Button onClick={copyImage} variant="outline" className="flex-1 bg-transparent text-xs">
-                    <Copy className="size-3" />
-                    Copy
-                  </Button>
-                  <Button onClick={shareImage} variant="outline" className="flex-1 bg-transparent text-xs">
-                    <Share2 className="size-3" />
-                    Share
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+            {/* Action Buttons */}
+            {state.transformedImage && (
+              <div className="flex gap-2 mt-6 justify-center">
+                <Button
+                  onClick={downloadImage}
+                  className="bg-secondary text-xs"
+                >
+                  <Download className="size-3" />
+                  Download
+                </Button>
+                <Button onClick={copyImage} variant="outline" className="bg-transparent text-xs">
+                  <Copy className="size-3" />
+                  Copy
+                </Button>
+                <Button onClick={shareImage} variant="outline" className="bg-transparent text-xs">
+                  <Share2 className="size-3" />
+                  Share
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       )}
 
       {/* Reset Button */}
