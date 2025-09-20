@@ -1,8 +1,15 @@
 import type { Metadata } from 'next'
 import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
+import { Kalam } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
+
+const kalam = Kalam({
+  subsets: ['latin'],
+  weight: ['400'],
+  variable: '--font-kalam',
+})
 
 export const metadata: Metadata = {
   title: 'Avatar try-on',
@@ -17,7 +24,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
+      <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable} ${kalam.variable}`}>
         {children}
         <Analytics />
       </body>
