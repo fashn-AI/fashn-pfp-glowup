@@ -12,7 +12,7 @@ export default function Home() {
         </div>
         <ProfileTransformer />
       </div>
-      <footer className="text-center text-muted-foreground">
+      <footer className="text-center text-muted-foreground pb-4">
         <div className="flex items-center justify-center gap-1 text-sm">
           <img src="/fashn-logo.svg" alt="FASHN AI" className="size-5" />
           <p>Powered by <a href="https://fashn.ai" target="_blank" rel="noopener noreferrer" className="underline">FASHN AI</a></p>

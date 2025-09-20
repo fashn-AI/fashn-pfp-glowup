@@ -309,23 +309,23 @@ export function ProfileTransformer() {
       {(state.profileImage || state.transformedImage) && (
         <Card className="overflow-hidden border border-primary/20">
           <CardContent className="p-6">
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
               {/* Original Profile */}
               {state.profileImage && (
                 <div className="flex flex-col items-center justify-center h-full relative">
                   <img
                     src={state.profileImage || "/placeholder.svg"}
                     alt="Original profile"
-                    className="w-32 h-32 rounded-lg object-cover shadow-lg"
+                    className="w-32 h-32 rounded-lg object-cover"
                   />
                   {state.transformedImage && (
-                    <div className="hidden absolute -top-[55%] -right-[15%] md:flex flex-col items-center justify-start">
+                    <div className="hidden absolute -top-[45%] -right-[15%] sm:flex flex-col items-center justify-start">
                       <div className="relative">
-                        <p className="absolute -top-[15px] lg:top-[7px] -rotate-12 text-xs text-gray-600 font-kalam">Hey that's me!</p>
+                        <p className="absolute -rotate-12 text-sm text-gray-600 font-kalam whitespace-nowrap">Hey that's me!</p>
                         <img
                           src="/arrow.svg"
                           alt="Transform arrow"
-                          className="w-16 h-16 lg:w-20 lg:h-20 opacity-80"
+                          className="size-20 opacity-80"
                         />
                       </div>
                     </div>
@@ -334,9 +334,9 @@ export function ProfileTransformer() {
               )}
 
               {state.transformedImage && (
-                <div className="md:hidden flex flex-col items-center justify-start">
+                <div className="sm:hidden flex flex-col items-center justify-start">
                   <div className="relative flex items-center">
-                    <p className="absolute -left-[80px] text-sm text-gray-600 font-kalam">Hey that's me!</p>
+                    <p className="absolute -left-[80px] text-sm text-gray-600 font-kalam whitespace-nowrap">Hey that's me!</p>
                     <img
                       src="/arrow.svg"
                       alt="Transform arrow"
@@ -349,7 +349,7 @@ export function ProfileTransformer() {
               {/* AI Model */}
               {state.transformedImage && (
                 <div className="flex flex-col items-center">
-                  <div className="w-40 h-56 rounded-lg overflow-hidden bg-muted" style={{ aspectRatio: '2/3' }}>
+                  <div className="w-auto h-96 rounded-lg overflow-hidden bg-muted" style={{ aspectRatio: '2/3' }}>
                     <img
                       src={state.transformedImage || "/placeholder.svg"}
                       alt="AI transformed"
@@ -362,7 +362,7 @@ export function ProfileTransformer() {
 
             {/* Action Buttons */}
             {state.transformedImage && (
-              <div className="flex gap-2 mt-6 justify-center">
+              <div className="flex gap-2 mt-6 justify-end">
                 <Button
                   onClick={downloadImage}
                   className="bg-secondary text-xs"
