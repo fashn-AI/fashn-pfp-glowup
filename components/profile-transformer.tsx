@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
-import { Loader2, Sparkles, Download, AlertCircle, Copy } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select"
+import { Loader2, Sparkles, Download, AlertCircle, Copy, User, IdCard } from "lucide-react"
 import { transformImage, getTwitterProfileImage } from "@/lib/actions"
 import { Turnstile } from "next-turnstile"
 import toast, { Toaster } from 'react-hot-toast';
@@ -26,6 +27,8 @@ export function ProfileTransformer() {
   >("required");
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [downloadType, setDownloadType] = useState<"card" | "avatar">("card");
+  const [copyType, setCopyType] = useState<"card" | "avatar">("card");
 
   const inputHandleRef = useRef<HTMLInputElement>(null);
 
@@ -142,7 +145,7 @@ export function ProfileTransformer() {
         
         // Clean up the object URL
         window.URL.revokeObjectURL(url)
-        toast.success("Image downloaded! Image downloaded to your downloads folder", { id: toastId })
+        toast.success("Image downloaded!", { id: toastId })
       } catch (error) {
         toast.error("Download failed. Could not download image", { id: toastId })
       }
@@ -160,7 +163,7 @@ export function ProfileTransformer() {
             [blob.type]: blob
           })
         ])
-        toast.success("Image copied! Image copied to clipboard", { id: toastId })
+        toast.success("Image copied!", { id: toastId })
       } catch (error) {
         toast.error("Copy failed. Could not copy image to clipboard", { id: toastId })
       }
@@ -186,7 +189,7 @@ export function ProfileTransformer() {
             [blob.type]: blob
           })
         ]);
-        toast.success("Card copied! Card copied to clipboard", { id: toastId });
+        toast.success("Card copied!", { id: toastId });
       } catch (error) {
         toast.error("Copy failed. Could not copy card to clipboard", { id: toastId });
       }
@@ -371,26 +374,65 @@ export function ProfileTransformer() {
 
             {/* Action Buttons */}
             {state.transformedImage && (
-              <div className="flex flex-col md:flex-row gap-2 mt-6 justify-end">
-                <Button
-                  onClick={downloadAvatar}
-                  className="bg-secondary text-xs"
-                >
-                  <Download className="size-3" />
-                  Download Avatar
-                </Button>
-                <Button onClick={copyAvatar} variant="outline" className="bg-transparent text-xs">
-                  <Copy className="size-3" />
-                  Copy Avatar
-                </Button>
-                <Button onClick={downloadCard} variant="outline" className="bg-transparent text-xs">
-                  <Download className="size-3" />
-                  Download Card
-                </Button>
-                <Button onClick={copyCard} variant="outline" className="bg-transparent text-xs">
-                  <Copy className="size-3" />
-                  Copy Card
-                </Button>
+              <div className="flex flex-row gap-3 mt-6 justify-end items-center">
+                <div className="flex bg-transparent">
+                  <Button
+                    onClick={() => copyType === "card" ? copyCard() : copyAvatar()}
+                    variant="outline"
+                    size="sm"
+                    className="rounded-l-lg rounded-r-none border-r-0 text-xs px-3"
+                  >
+                    <Copy className="size-3 mr-1" />
+                    Copy {copyType}
+                  </Button>
+
+                  <Select onValueChange={(value: "card" | "avatar") => setCopyType(value)}>
+                    <SelectTrigger size="sm" className="rounded-r-lg rounded-l-none border border-border bg-background border-l-0 text-xs px-2 focus:ring-0 shadow-xs hover:bg-accent hover:text-white [&_svg]:hover:text-white"></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="card">
+                        <div className="flex items-center gap-2">
+                          <IdCard className="size-3 hover:text-white" />
+                          Card Image
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="avatar">
+                        <div className="flex items-center gap-2">
+                          <User className="size-3 hover:text-white" />
+                          Avatar
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex bg-transparent">
+                  <Button
+                    onClick={() => downloadType === "card" ? downloadCard() : downloadAvatar()}
+                    variant="outline"
+                    size="sm"
+                    className="rounded-l-lg rounded-r-none border-r-0 text-xs px-3"
+                  >
+                    <Download className="size-3 mr-1" />
+                    Download {downloadType}
+                  </Button>
+
+                  <Select onValueChange={(value: "card" | "avatar") => setDownloadType(value)}>
+                    <SelectTrigger size="sm" className="rounded-r-lg rounded-l-none border border-border bg-background border-l-0 text-xs px-2 focus:ring-0 shadow-xs hover:bg-accent hover:text-white [&_svg]:hover:text-white"></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="card">
+                        <div className="flex items-center gap-2">
+                          <IdCard className="size-3 hover:text-white" />
+                          Card Image
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="avatar">
+                        <div className="flex items-center gap-2">
+                          <User className="size-3 hover:text-white" />
+                          Avatar
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             )}
           </CardContent>
