@@ -60,7 +60,7 @@ export function ProfileTransformer() {
 
       if (result.error) {
         if (result.error.includes("No profile picture found")) {
-          throw new Error("This user doesn't have a public profile picture. Please try a different user.")
+          throw new Error("Couldn't load this user's profile picture. Please try again or use a different user.")
         } else if (result.error.includes("Profile not found")) {
           throw new Error("Profile not found. Please check the username and try again.")
         } else {
