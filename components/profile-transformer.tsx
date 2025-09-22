@@ -100,7 +100,7 @@ export function ProfileTransformer() {
 
   const initiateTransform = () => {
     setState({ status: "idle" })
-
+    setError(null)
     executeTurnstile();
   }
 
@@ -353,16 +353,16 @@ export function ProfileTransformer() {
                   <img
                     src={state.profileImage || "/placeholder.svg"}
                     alt="Original profile"
-                    className="w-32 h-32 rounded-xl border border-primary/15 shadow-sm object-cover"
+                    className="hidden md:block w-32 h-32 rounded-xl border border-primary/15 shadow-sm object-cover"
                   />
                   {state.transformedImage && (
-                    <div className="absolute z-10 -top-[45%] -right-[15%] flex flex-col items-center justify-start">
+                    <div className="hidden md:flex absolute z-10 md:-top-[60%] md:-right-[15%] items-center justify-start">
                       <div className="relative">
-                        <p className="absolute -rotate-12 text-sm text-gray-600 font-kalam whitespace-nowrap">Hey that's me!</p>
+                        <p className="absolute -rotate-12 md:text-2xl text-gray-600 font-kalam whitespace-nowrap">Hey that's me!</p>
                         <img
                           src="/arrow.svg"
                           alt="Transform arrow"
-                          className="size-20 opacity-80"
+                          className="hidden md:block size-20 opacity-80 mt-6"
                         />
                       </div>
                     </div>
@@ -386,7 +386,7 @@ export function ProfileTransformer() {
 
             {/* Action Buttons */}
             {state.transformedImage && (
-              <div className="flex flex-row gap-3 mt-6 justify-end items-center">
+              <div className="flex flex-col md:flex-row gap-3 mt-6 justify-end items-center">
                 <div className="flex bg-transparent">
                   <Button
                     onClick={() => copyType === "card" ? copyCard() : copyAvatar()}
