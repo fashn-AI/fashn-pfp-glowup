@@ -43,7 +43,7 @@ export function ProfileTransformer() {
     if (state.status === "transforming") {
       setTransformingMessage("Starting AI transformation...");
       const timer = setTimeout(() => {
-        setTransformingMessage("Creating your AI model... This may take a minute");
+        setTransformingMessage("Creating your AI model... This may take a few moments");
       }, 2000);
 
       return () => clearTimeout(timer);
@@ -73,7 +73,7 @@ export function ProfileTransformer() {
 
   const executeTurnstile = () => {
     setTurnstileVerificationInProgress(true);
-    
+
     window.turnstile.execute('#turnstile-widget', {
       retry: "auto",
       refreshExpired: "auto",
@@ -147,14 +147,14 @@ export function ProfileTransformer() {
         const response = await fetch(state.transformedImage)
         const blob = await response.blob()
         const url = window.URL.createObjectURL(blob)
-        
+
         const link = document.createElement("a")
         link.href = url
         link.download = `${handle}-ai-model.png`
         document.body.appendChild(link)
         link.click()
         document.body.removeChild(link)
-        
+
         // Clean up the object URL
         window.URL.revokeObjectURL(url)
         toast.success("Image downloaded!", { id: toastId })
@@ -290,7 +290,7 @@ export function ProfileTransformer() {
                     setTurnstileStatus("required");
                     setError(null);
                   }}
-                  onVerify={async(token) => {
+                  onVerify={async (token) => {
                     setTurnstileToken(token);
                     setTurnstileStatus("success");
                     setError(null);
@@ -324,7 +324,14 @@ export function ProfileTransformer() {
 
           {state.status === "transforming" && (
             <div className="text-center text-muted-foreground">
-              <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2" />
+              {state.profileImage && (
+                <img
+                  src={state.profileImage}
+                  alt="Profile"
+                  className="w-12 h-12 rounded-full object-cover mx-auto mb-2 animate-spin  shadow-sm"
+                  style={{ animationDuration: '1s' }}
+                />
+              )}
               {transformingMessage}
             </div>
           )}
