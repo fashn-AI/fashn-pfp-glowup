@@ -12,9 +12,8 @@ const kalam = Kalam({
 })
 
 export const metadata: Metadata = {
-  title: 'Avatar try-on',
-  description: 'Try on your avatar',
-  generator: 'v0.app',
+  title: 'My PFP Glowup',
+  description: 'Create your AI avatar from your X profile picture',
 }
 
 export default function RootLayout({
