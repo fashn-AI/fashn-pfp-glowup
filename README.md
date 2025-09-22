@@ -4,6 +4,9 @@
 
 This demo lets you enter your X handle to generate a full upper-body AI avatar using the FASHN SDK.
 
+<img width="622" height="464" alt="image" src="https://github.com/user-attachments/assets/7c6d7a0c-8faf-4c65-8847-aba2db40d096" />
+
+
 ## Tech Stack
 
 ### Frontend
