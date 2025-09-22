@@ -292,12 +292,12 @@ export function ProfileTransformer() {
                   }}
                   onVerify={async(token) => {
                     setTurnstileToken(token);
+                    setTurnstileStatus("success");
                     setError(null);
-                    setTurnstileVerificationInProgress(false);
                     setTimeout(() => {
-                      setTurnstileStatus("success");
+                      setTurnstileVerificationInProgress(false);
                       window.turnstile.reset('#turnstile-widget');
-                    }, 1500);
+                    }, 500);
                   }}
                 />
               </div>
@@ -336,7 +336,7 @@ export function ProfileTransformer() {
       </div>
 
       {/* Results Section */}
-      {(state.profileImage || state.transformedImage) && (
+      {(state.transformedImage) && (
         <Card className="bg-white overflow-hidden border border-primary/10 shadow-xs">
           <CardContent>
             <div id='social-media-card' className="bg-white p-2 flex flex-row items-center justify-center gap-2">

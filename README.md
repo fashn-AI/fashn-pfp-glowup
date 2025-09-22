@@ -22,6 +22,7 @@ Create a full upper-body AI model from cropped headshots and selfies.
 
 - Node.js 18+ 
 - Cloudflare Turnstile credentials
+  - If you don't want to see the turnstile widget, choose `Invisible` in `Widget Mode` in Cloudflare manage widget page.
 - FASHN AI API key
 - Upstash redis rest url and rest token
 
