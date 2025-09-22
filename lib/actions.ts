@@ -104,16 +104,21 @@ export async function getTwitterProfileImage({ username }: TwitterProfileParams)
       return { error: "Username is required" }
     }
 
-    const profileImageUrl = `https://unavatar.io/x/${username}`
+    // Use fallback=false to prevent unavatar from returning placeholder images
+    const profileImageUrl = `https://unavatar.io/x/${username}?fallback=false`
 
-    // Verify the image exists by making a HEAD request
     const imageResponse = await fetch(profileImageUrl, { method: "HEAD" })
 
     if (!imageResponse.ok) {
-      return { error: "Profile not found" }
+      // If fallback=false returns 404, the user likely has no profile picture
+      if (imageResponse.status === 404) {
+        return { error: "No profile picture found for this user" }
+      }
+      return { error: "Profile not found or inaccessible" }
     }
 
-    return { profile_image_url: profileImageUrl }
+
+    return { profile_image_url: `https://unavatar.io/x/${username}` }
   } catch (error) {
     console.error("Error fetching profile image:", error)
     return { error: "Failed to fetch profile image" }

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select"
+import { ImageWithSkeleton } from "@/components/ui/image-with-skeleton"
 import { Loader2, Sparkles, Download, AlertCircle, Copy, User, IdCard } from "lucide-react"
 import { transformImage, getTwitterProfileImage } from "@/lib/actions"
 import { Turnstile } from "next-turnstile"
@@ -43,7 +44,7 @@ export function ProfileTransformer() {
     if (state.status === "transforming") {
       setTransformingMessage("Starting AI transformation...");
       const timer = setTimeout(() => {
-        setTransformingMessage("Creating your AI model... This may take a few moments");
+        setTransformingMessage("Creating your AI avatar... This may take a few moments");
       }, 2000);
 
       return () => clearTimeout(timer);
@@ -58,7 +59,13 @@ export function ProfileTransformer() {
       const result = await getTwitterProfileImage({ username: cleanUsername })
 
       if (result.error) {
-        throw new Error(result.error)
+        if (result.error.includes("No profile picture found")) {
+          throw new Error("This user doesn't have a public profile picture. Please try a different user.")
+        } else if (result.error.includes("Profile not found")) {
+          throw new Error("Profile not found. Please check the username and try again.")
+        } else {
+          throw new Error(result.error)
+        }
       }
 
       if (!result.profile_image_url) {
@@ -67,7 +74,11 @@ export function ProfileTransformer() {
 
       return result.profile_image_url
     } catch (error) {
-      throw new Error("Could not fetch profile picture. Please check the username.")
+      // Re-throw specific errors, or provide a generic fallback
+      if (error instanceof Error && error.message.includes("user")) {
+        throw error
+      }
+      throw new Error("Could not fetch profile picture. Please check the username and try again.")
     }
   }
 
@@ -350,10 +361,11 @@ export function ProfileTransformer() {
               {/* Original Profile */}
               {state.profileImage && (
                 <div className="flex flex-col items-center justify-center h-full relative">
-                  <img
-                    src={state.profileImage || "/placeholder.svg"}
+                  <ImageWithSkeleton
+                    src={state.profileImage}
                     alt="Original profile"
                     className="hidden md:block w-32 h-32 rounded-xl border border-primary/15 shadow-sm object-cover"
+                    skeletonClassName="rounded-xl"
                   />
                   {state.transformedImage && (
                     <div className="hidden md:flex absolute z-10 md:-top-[60%] md:-right-[15%] items-center justify-start">
@@ -374,10 +386,11 @@ export function ProfileTransformer() {
               {state.transformedImage && (
                 <div className="flex flex-col items-center">
                   <div className="w-auto h-[28rem] rounded-lg overflow-hidden shadow-xs" style={{ aspectRatio: '2/3' }}>
-                    <img
-                      src={state.transformedImage || "/placeholder.svg"}
+                    <ImageWithSkeleton
+                      src={state.transformedImage}
                       alt="AI transformed"
                       className="w-full h-full object-cover rounded-lg border border-primary/10"
+                      skeletonClassName="rounded-lg"
                     />
                   </div>
                 </div>
