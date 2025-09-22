@@ -4,6 +4,7 @@ import { validateTurnstileToken } from "next-turnstile";
 import { Redis } from "@upstash/redis";
 import { Ratelimit } from "@upstash/ratelimit";
 import { headers } from "next/headers";
+import { unfurl } from "unfurl.js";
 import Fashn from 'fashn';
 
 const fashnClient = new Fashn({
@@ -106,19 +107,31 @@ export async function getTwitterProfileImage({ username }: TwitterProfileParams)
 
     // Use fallback=false to prevent unavatar from returning placeholder images
     const profileImageUrl = `https://unavatar.io/x/${username}?fallback=false`
-
     const imageResponse = await fetch(profileImageUrl, { method: "HEAD" })
 
-    if (!imageResponse.ok) {
-      // If fallback=false returns 404, the user likely has no profile picture
-      if (imageResponse.status === 404) {
-        return { error: "No profile picture found for this user" }
-      }
-      return { error: "Profile not found or inaccessible" }
+    if (imageResponse.ok) {
+      console.log(`[Image Fetch] Got image from unavatar: ${username}`);
+      return { profile_image_url: `https://unavatar.io/x/${username}` };
     }
 
+    // If fallback=false returns 404, the user likely has no profile picture
+    if (imageResponse.status === 404) {
+      const metadata = await unfurl(`https://x.com/${username}`, {
+        timeout: 5000
+      });      
+      if (metadata.open_graph?.images?.at(0)?.url) {
+        let imageUrl = metadata.open_graph.images.at(0)?.url;
+        if (!imageUrl?.includes('profile_images')) 
+          return { error: "Invalid Twitter image URL" };
 
-    return { profile_image_url: `https://unavatar.io/x/${username}` }
+        console.log(`[Image Fetch] Got image from unfurl: ${username}`);
+        imageUrl = imageUrl.includes("200x200") ? imageUrl.replace("200x200", "400x400") : imageUrl;
+        return { profile_image_url: imageUrl };
+      }
+    }
+
+    return { error: "Profile not found or inaccessible" }
+
   } catch (error) {
     console.error("Error fetching profile image:", error)
     return { error: "Failed to fetch profile image" }
