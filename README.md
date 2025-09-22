@@ -1,6 +1,7 @@
-# AI Avatar
+# My PFP Glowup ✨
 
-Create a full upper-body AI model from cropped headshots and selfies.
+[View Demo](https://fashn-pfp-glowup.vercel.app/)
+This demo lets you enter your X handle to generate a full upper-body AI avatar using the FASHN SDK.
 
 ## Tech Stack
 
