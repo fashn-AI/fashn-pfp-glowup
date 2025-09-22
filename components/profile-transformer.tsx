@@ -29,6 +29,7 @@ export function ProfileTransformer() {
   const [error, setError] = useState<string | null>(null);
   const [downloadType, setDownloadType] = useState<"card" | "avatar">("card");
   const [copyType, setCopyType] = useState<"card" | "avatar">("card");
+  const [transformingMessage, setTransformingMessage] = useState("Starting AI transformation...");
 
   const inputHandleRef = useRef<HTMLInputElement>(null);
 
@@ -37,6 +38,17 @@ export function ProfileTransformer() {
       handleTransform();
     }
   }, [turnstileStatus]);
+
+  useEffect(() => {
+    if (state.status === "transforming") {
+      setTransformingMessage("Starting AI transformation...");
+      const timer = setTimeout(() => {
+        setTransformingMessage("Creating your AI model... This may take a minute");
+      }, 2000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [state.status]);
 
   const fetchProfilePicture = async (username: string) => {
     // Remove @ if present
@@ -225,7 +237,7 @@ export function ProfileTransformer() {
             <label htmlFor="handle" className="text-sm font-medium text-card-foreground">
               X Handle
             </label>
-            <div className="flex gap-2">
+            <div className="flex gap-2 relative">
               <div className="relative flex-1">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">@</span>
                 <Input
@@ -254,41 +266,41 @@ export function ProfileTransformer() {
                   </>
                 )}
               </Button>
-            </div>
 
-            <div className="flex justify-start">
-              <Turnstile
-                siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
-                retry="auto"
-                refreshExpired="auto"
-                execution="execute"
-                appearance="execute"
-                theme="auto"
-                sandbox={false}
-                onError={() => {
-                  setTurnstileStatus("error");
-                  setError("Security check failed. Please try again.");
-                  setTurnstileVerificationInProgress(false);
-                }}
-                onExpire={() => {
-                  setTurnstileStatus("expired");
-                  setError("Security check expired. Please verify again.");
-                  setTurnstileVerificationInProgress(false);
-                }}
-                onLoad={() => {
-                  setTurnstileStatus("required");
-                  setError(null);
-                }}
-                onVerify={async(token) => {
-                  setTurnstileToken(token);
-                  setTurnstileStatus("success");
-                  setError(null);
-                  setTurnstileVerificationInProgress(false);
-                  setTimeout(() => {
-                    window.turnstile.reset('#turnstile-widget');
-                  }, 1500);
-                }}
-              />
+              <div className="absolute top-full left-0 mt-2 z-50">
+                <Turnstile
+                  siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+                  retry="auto"
+                  refreshExpired="auto"
+                  execution="execute"
+                  appearance="execute"
+                  theme="auto"
+                  sandbox={false}
+                  onError={() => {
+                    setTurnstileStatus("error");
+                    setError("Security check failed. Please try again.");
+                    setTurnstileVerificationInProgress(false);
+                  }}
+                  onExpire={() => {
+                    setTurnstileStatus("expired");
+                    setError("Security check expired. Please verify again.");
+                    setTurnstileVerificationInProgress(false);
+                  }}
+                  onLoad={() => {
+                    setTurnstileStatus("required");
+                    setError(null);
+                  }}
+                  onVerify={async(token) => {
+                    setTurnstileToken(token);
+                    setError(null);
+                    setTurnstileVerificationInProgress(false);
+                    setTimeout(() => {
+                      setTurnstileStatus("success");
+                      window.turnstile.reset('#turnstile-widget');
+                    }, 1500);
+                  }}
+                />
+              </div>
             </div>
 
             {error && (
@@ -313,14 +325,7 @@ export function ProfileTransformer() {
           {state.status === "transforming" && (
             <div className="text-center text-muted-foreground">
               <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2" />
-              Starting AI transformation...
-            </div>
-          )}
-
-          {turnstileVerificationInProgress && (
-            <div className="text-center text-muted-foreground">
-              <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2" />
-              Performing security checks...
+              {transformingMessage}
             </div>
           )}
 
