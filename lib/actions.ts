@@ -114,22 +114,22 @@ export async function getTwitterProfileImage({ username }: TwitterProfileParams)
       return { profile_image_url: `https://unavatar.io/x/${username}` };
     }
 
-    // If fallback=false returns 404, the user likely has no profile picture
-    if (imageResponse.status === 404) {
-      const metadata = await unfurl(`https://x.com/${username}`, {
-        timeout: 5000
-      });      
-      if (metadata.open_graph?.images?.at(0)?.url) {
-        let imageUrl = metadata.open_graph.images.at(0)?.url;
-        if (!imageUrl?.includes('profile_images')) 
-          return { error: "Invalid Twitter image URL" };
-
-        console.log(`[Image Fetch] Got image from unfurl: ${username}`);
-        imageUrl = imageUrl.includes("200x200") ? imageUrl.replace("200x200", "400x400") : imageUrl;
-        return { profile_image_url: imageUrl };
+    const metadata = await unfurl(`https://x.com/${username}`, {
+      timeout: 5000
+    });      
+    if (metadata.open_graph?.images?.at(0)?.url) {
+      let imageUrl = metadata.open_graph.images.at(0)?.url;
+      if (!imageUrl?.includes('profile_images')) {
+        console.error(`[Image Fetch Error] Invalid image URL: ${imageUrl}`);
+        return { error: "Service could not find the user's profile picture" };
       }
+
+      console.log(`[Image Fetch] Got image from unfurl: ${username}`);
+      imageUrl = imageUrl.includes("200x200") ? imageUrl.replace("200x200", "400x400") : imageUrl;
+      return { profile_image_url: imageUrl };
     }
 
+    console.error(`[Image Fetch Error] Profile not found or inaccessible: ${username}`);
     return { error: "Profile not found or inaccessible" }
 
   } catch (error) {
